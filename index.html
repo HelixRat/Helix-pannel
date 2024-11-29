@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HELIX VIP PANEL</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #f4f4f9;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      background: #1f1f1f;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #ff4d4d;
+    }
+    .container {
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #1c1c1c;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+    h1, h3 {
+      text-align: center;
+      color: #ffffff;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+    }
+    input, select {
+      background: #333333;
+      color: #ffffff;
+    }
+    button {
+      background-color: #ff4d4d;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e63939;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      background: #292929;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+      border: 1px solid #444444;
+      color: #ffffff;
+    }
+    .key-valid {
+      color: #00ff00;
+      font-weight: bold;
+    }
+    .key-invalid {
+      color: #ff3333;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">HELIX VIP PANEL</div>
+
+  <!-- Login Page -->
+  <div class="container" id="login-container">
+    <h1>Login</h1>
+    <form id="login-form">
+      <input type="text" id="username" placeholder="Enter Username" required>
+      <input type="password" id="password" placeholder="Enter Password" required>
+      <button type="submit">Login</button>
+    </form>
+    <p id="login-message"></p>
+    <button id="signup-btn">Sign Up</button>
+  </div>
+
+  <!-- Sign Up Page -->
+  <div class="container" id="signup-container" style="display:none;">
+    <h1>Sign Up</h1>
+    <form id="signup-form">
+      <input type="text" id="signup-username" placeholder="Choose Username" required>
+      <input type="password" id="signup-password" placeholder="Choose Password" required>
+      <button type="submit">Create Account</button>
+    </form>
+    <p id="signup-message"></p>
+    <button id="back-to-login">Back to Login</button>
+  </div>
+
+  <!-- Key Generation Page (Hidden Initially) -->
+  <div class="container" id="key-generation-container" style="display:none;">
+    <h1>Generate Keys</h1>
+    <form id="generate-form">
+      <input type="text" id="name" placeholder="Enter Name" required>
+      <select id="duration-days">
+        <option value="0">0 Days</option>
+        <option value="1">1 Day</option>
+        <option value="7">7 Days</option>
+        <option value="30">30 Days</option>
+      </select>
+      <input type="number" id="duration-hours" placeholder="Hours" min="0" required>
+      <button type="submit">Generate Key</button>
+    </form>
+    <h3>Generated Keys</h3>
+    <ul id="key-list"></ul>
+    <h3>Validate a Key</h3>
+    <form id="validate-form">
+      <input type="text" id="validate-key" placeholder="Enter Key to Validate" required>
+      <button type="submit">Validate Key</button>
+    </form>
+    <p id="validation-result"></p>
+    <button id="logout">Logout</button>
+  </div>
+
+  <script>
+    // Utility functions
+    function generateKey(name, days, hours) {
+      const key = `${name.toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const expiration = Date.now() + (days * 24 * 60 * 60 * 1000) + (hours * 60 * 60 * 1000);
+      return { name, key, expiration };  // Include the name in the object
+    }
+
+    // Get users data from localStorage
+    const users = JSON.parse(localStorage.getItem('users')) || {};
+    const loggedInUser = localStorage.getItem('loggedInUser');
+
+    // If a user is logged in, go directly to the key generation page
+    if (loggedInUser) {
+      showKeyGenerationPage(loggedInUser);
+    }
+
+    // Show Key Generation page
+    function showKeyGenerationPage(username) {
+      document.getElementById('login-container').style.display = 'none';
+      document.getElementById('signup-container').style.display = 'none';
+      document.getElementById('key-generation-container').style.display = 'block';
+      loadUserKeys(username);
+    }
+
+    // Load User's Keys
+    function loadUserKeys(username) {
+      const keyList = document.getElementById('key-list');
+      keyList.innerHTML = '';
+      const keys = users[username].keys || [];
+      keys.forEach(function (keyObj) {
+        const listItem = document.createElement('li');
+        listItem.textContent = `Name: ${keyObj.name}, Key: ${keyObj.key}, Expires: ${new Date(keyObj.expiration).toLocaleString()}`;
+        keyList.appendChild(listItem);
+      });
+    }
+
+    // Login Functionality
+    document.getElementById('login-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const user = users[username];
+
+      if (user && user.password === password) {
+        // Set logged in user in localStorage
+        localStorage.setItem('loggedInUser', username);
+        showKeyGenerationPage(username);
+      } else {
+        document.getElementById('login-message').textContent = 'Invalid username or password';
+      }
+    });
+
+    // Sign Up Functionality
+    document.getElementById('signup-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const username = document.getElementById('signup-username').value.trim();
+      const password = document.getElementById('signup-password').value.trim();
+
+      if (users[username]) {
+        document.getElementById('signup-message').textContent = 'Username already exists. Please choose another.';
+        return;
+      }
+
+      // Create new user
+      users[username] = { password: password, keys: [] };
+      localStorage.setItem('users', JSON.stringify(users));
+      document.getElementById('signup-message').textContent = 'Account created successfully! You can now log in.';
+    });
+
+    // Switch to Sign Up page
+    document.getElementById('signup-btn').addEventListener('click', function () {
+      document.getElementById('login-container').style.display = 'none';
+      document.getElementById('signup-container').style.display = 'block';
+    });
+
+    // Back to Login page
+    document.getElementById('back-to-login').addEventListener('click', function () {
+      document.getElementById('signup-container').style.display = 'none';
+      document.getElementById('login-container').style.display = 'block';
+    });
+
+    // Logout functionality
+    document.getElementById('logout').addEventListener('click', function () {
+      localStorage.removeItem('loggedInUser');
+      document.getElementById('key-generation-container').style.display = 'none';
+      document.getElementById('login-container').style.display = 'block';
+    });
+
+    // Key Generation
+    document.getElementById('generate-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const username = localStorage.getItem('loggedInUser');
+      const name = document.getElementById('name').value.trim();
+      const days = parseInt(document.getElementById('duration-days').value, 10);
+      const hours = parseInt(document.getElementById('duration-hours').value, 10);
+
+      if (!name) {
+        alert("Name cannot be empty!");
+        return;
+      }
+
+      const newKey = generateKey(name, days, hours);
+      users[username].keys.push(newKey);
+      localStorage.setItem('users', JSON.stringify(users));
+
+      loadUserKeys(username);
+    });
+
+    // Key Validation
+    document.getElementById('validate-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const key = document.getElementById('validate-key').value.trim();
+      const username = localStorage.getItem('loggedInUser');
+      const keys = users[username].keys || [];
+
+      const foundKey = keys.find(k => k.key === key);
+      const resultElement = document.getElementById('validation-result');
+      
+      if (foundKey && foundKey.expiration > Date.now()) {
+        resultElement.textContent = 'This key is VALID!';
+        resultElement.className = 'key-valid';
+      } else {
+        resultElement.textContent = 'This key is INVALID or expired!';
+        resultElement.className = 'key-invalid';
+      }
+    });
+  </script>
+
+</body>
+</html>
